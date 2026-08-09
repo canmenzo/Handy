@@ -2,54 +2,34 @@
 
 :root {
   --s-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  /* Near-opaque app surface (theme.css --color-background at 98%). Auto-flips
-     light/dark with --color-background, so no dark-mode override is needed. */
-  --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
-  /* Accent = logo pink; flips automatically via --color-logo-primary. */
-  --s-accent: var(--color-logo-primary);
-  --s-accent-soft: color-mix(
-    in srgb,
-    var(--color-background-ui) 16%,
-    transparent
-  );
-  /* Neutrals. Hairlines reuse the app's mid-gray at low opacity — same vocabulary
-     as the app's border-mid-gray/* utilities. muted/faint are overlay-specific
-     secondary/tertiary text grays (no theme equivalent). */
-  --s-muted: #6e6e6e;
-  --s-faint: #9a9a9a;
-  --s-border: color-mix(in srgb, var(--color-mid-gray) 22%, transparent);
-  --s-hair: color-mix(in srgb, var(--color-mid-gray) 12%, transparent);
+  /* The overlay is deliberately theme-independent: always a near-black pill with
+     white content, so it reads the same over any app and in either OS theme.
+     (The rest of the app still follows theme.css.) */
+  --s-surface: #0b0b0d;
+  /* Live content (waveform bars, record dot) is white. */
+  --s-accent: #ffffff;
+  --s-accent-soft: rgba(255, 255, 255, 0.16);
+  /* The post-speech processing spinner is the one splash of color. */
+  --s-spinner: #a06bff;
+  --s-muted: #b6b6bd;
+  --s-faint: #8a8a92;
+  --s-border: rgba(255, 255, 255, 0.1);
+  --s-hair: rgba(255, 255, 255, 0.12);
 
   /* Card geometry — single source of truth for the visible overlay sizes. The
      native overlay window (overlay.rs) is sized from these: it must be at least
      the card's max footprint (--ov-work-w for compact, --ov-open-w for Live),
      since the card is anchored flush to the screen edge in CSS. Keep overlay.rs
      in sync when these change. */
-  --ov-rest-w: 172px; /* resting compact pill (minimal, recording) -- roomy enough
-                         for the English working label before the grow starts */
-  --ov-pill-w: 184px; /* base width / Live pill before it opens or collapses */
-  --ov-work-w: 216px; /* working pill (transcribing / polishing) -- wide enough to
-                         center longer labels; shared by Live (collapsed) + minimal */
+  --ov-rest-w: 86px; /* resting compact pill (minimal, recording) -- hugs the
+                         waveform; the working label is icon-only at this size */
+  --ov-pill-w: 92px; /* base width / Live pill before it opens or collapses */
+  --ov-work-w: 108px; /* working pill (transcribing / polishing) */
   --ov-open-w: 392px; /* Live panel, expanded */
-  --ov-base-h: 40px; /* control-row height (.sbase) */
+  --ov-base-h: 26px; /* control-row height (.sbase) */
   --ov-cap-max-h: 64px; /* max height of the scrolling live-text region */
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Accent uses the lighter logo pink in dark — reads better on the dark
-       surface than the deeper UI pink. */
-    --s-accent-soft: color-mix(
-      in srgb,
-      var(--color-logo-primary) 20%,
-      transparent
-    );
-    --s-muted: #a3a09a;
-    --s-faint: #6f6c66;
-    /* Hairlines flip to the near-white text token for contrast on dark. */
-    --s-border: color-mix(in srgb, var(--color-text) 12%, transparent);
-    --s-hair: color-mix(in srgb, var(--color-text) 8%, transparent);
-  }
-}
+/* No dark-mode override: the overlay palette above is fixed in both themes. */
 
 /* ============================================================
    Unified overlay stage — one fixed, transparent container shared by the compact
@@ -118,7 +98,7 @@
 /* Shared base card. Flat: theme surface + hairline border, no shadow or blur. */
 .scard {
   width: var(--ov-pill-w);
-  border-radius: 24px;
+  border-radius: 13px; /* == half of --ov-base-h: a true pill at rest */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -158,7 +138,7 @@
 }
 .scard.working {
   width: var(--ov-work-w);
-  border-radius: 18px;
+  border-radius: 13px;
 }
 
 /* Compact form: two fixed widths so the recording→working change is an animatable
@@ -170,8 +150,10 @@
   animation: none;
   width: var(--ov-rest-w);
 }
+/* The compact working row is spinner-only, so the pill holds its resting width
+   instead of growing to fit a label. */
 .scard.compact.cworking {
-  width: var(--ov-work-w);
+  width: var(--ov-rest-w);
 }
 
 /* text region — auto-height open via grid-rows trick; region fades as a whole */
@@ -205,7 +187,9 @@
   font-style: italic;
   line-height: 1.35;
   letter-spacing: -0.003em;
-  color: color-mix(in srgb, var(--color-text) 90%, transparent);
+  /* Fixed light text: the card is always near-black, so this can't follow the
+     theme's text token (it would go dark-on-dark in light mode). */
+  color: rgba(255, 255, 255, 0.92);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
   mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
   scrollbar-width: none; /* Firefox */
@@ -243,29 +227,29 @@
    Same structure for pill & panel; the dot stays anchored left in both. */
 .sbase {
   height: var(--ov-base-h);
-  padding: 0 10px;
+  padding: 0 7px;
   display: grid;
-  /* Equal side columns (min 22px to hold the cancel button) keep the center item
+  /* Equal side columns (min 16px to hold the cancel button) keep the center item
      — waveform or label — centered whether the pill is at min width or content-
      sized. */
-  grid-template-columns: minmax(22px, 1fr) auto minmax(22px, 1fr);
+  grid-template-columns: minmax(16px, 1fr) auto minmax(16px, 1fr);
   align-items: center;
 }
 .sbase-l {
   display: flex;
-  padding-left: 5px;
+  padding-left: 2px;
   align-items: center;
   justify-self: start;
 }
 .sbase-r {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   justify-self: end;
 }
 .sdot {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--s-accent);
   flex: none;
@@ -280,7 +264,7 @@
   }
 }
 .stimer {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--s-faint);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -295,22 +279,22 @@
 .swave {
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding-right: 8px;
-  height: 18px;
+  gap: 2px;
+  padding-right: 2px;
+  height: 11px;
   flex: none;
 }
 .swave i {
-  width: 4px;
-  min-height: 3px;
-  max-height: 18px;
-  border-radius: 2px;
+  width: 2.5px;
+  min-height: 2px;
+  max-height: 11px;
+  border-radius: 1.5px;
   background: var(--s-accent);
   transition: height 80ms linear;
 }
 .sx {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   flex: none;
   padding: 0;
@@ -329,13 +313,13 @@
     transform 100ms ease;
 }
 .sx svg {
-  width: 9px;
-  height: 9px;
+  width: 7px;
+  height: 7px;
   display: block;
 }
 .sx:hover {
   background: var(--s-accent-soft);
-  color: var(--color-text);
+  color: #ffffff;
   transform: scale(1.05);
 }
 .sx:active {
@@ -344,11 +328,11 @@
 
 /* working state (transcribing / polishing) — spinner + label */
 .sspinner {
-  width: 13px;
-  height: 13px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  border: 2px solid var(--s-hair);
-  border-top-color: var(--s-accent);
+  border: 1.5px solid var(--s-hair);
+  border-top-color: var(--s-spinner);
   animation: sspin 0.7s linear infinite;
   flex: none;
 }
@@ -358,10 +342,10 @@
   }
 }
 .swork-label {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--s-muted);
   white-space: nowrap;
-  padding: 0 8px; /* breathing room from the spinner / cancel when content-sized */
+  padding: 0 6px; /* breathing room from the spinner / cancel when content-sized */
   /* Safety net: ellipsize rather than clip if a label exceeds the max pill width. */
   min-width: 0;
   overflow: hidden;
