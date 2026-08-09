@@ -158,7 +158,7 @@ const RecordingOverlay: React.FC = () => {
         <i
           key={i}
           style={{
-            height: `${Math.max(3, Math.min(18, 3 + Math.pow(v, 0.7) * 15))}px`,
+            height: `${Math.max(2, Math.min(11, 2 + Math.pow(v, 0.7) * 9))}px`,
           }}
         />
       ))}
@@ -206,6 +206,18 @@ const RecordingOverlay: React.FC = () => {
       </div>
       <span className="swork-label">{label}</span>
       <div className="sbase-r">{showCancel && cancelBtn}</div>
+    </div>
+  );
+
+  // Compact working row: the spinner sits in the center zone, where the waveform
+  // was, and the label is dropped — no text fits at the compact pill's width, and
+  // the spinner alone already reads as "working". The label rides along as the
+  // accessible name so screen readers still announce the state.
+  const compactWorkingRow = (label: string) => (
+    <div className="sbase">
+      <div className="sbase-l" />
+      <span className="sspinner" role="status" aria-label={label} />
+      <div className="sbase-r">{cancelBtn}</div>
     </div>
   );
 
@@ -278,7 +290,7 @@ const RecordingOverlay: React.FC = () => {
       <div
         className={`scard compact ${working && isVisible ? "cworking" : ""}`}
       >
-        {working ? workingRow(workLabel, true) : listeningRow(false, true)}
+        {working ? compactWorkingRow(workLabel) : listeningRow(false, true)}
       </div>
     </div>
   );
