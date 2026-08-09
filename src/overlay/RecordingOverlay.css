@@ -5,7 +5,7 @@
   /* The overlay is deliberately theme-independent: always a near-black pill with
      white content, so it reads the same over any app and in either OS theme.
      (The rest of the app still follows theme.css.) */
-  --s-surface: #0b0b0d;
+  --s-surface: #000000;
   /* Live content (waveform bars, record dot) is white. */
   --s-accent: #ffffff;
   --s-accent-soft: rgba(255, 255, 255, 0.16);
@@ -21,13 +21,18 @@
      the card's max footprint (--ov-work-w for compact, --ov-open-w for Live),
      since the card is anchored flush to the screen edge in CSS. Keep overlay.rs
      in sync when these change. */
-  --ov-rest-w: 86px; /* resting compact pill (minimal, recording) -- hugs the
-                         waveform; the working label is icon-only at this size */
-  --ov-pill-w: 92px; /* base width / Live pill before it opens or collapses */
+  --ov-rest-w: 104px; /* resting compact pill (minimal, recording) -- hugs the
+                         waveform; the working state is a bare spinner */
+  --ov-pill-w: 110px; /* base width / Live pill before it opens or collapses */
   --ov-work-w: 108px; /* working pill (transcribing / polishing) */
   --ov-open-w: 392px; /* Live panel, expanded */
-  --ov-base-h: 26px; /* control-row height (.sbase) */
+  --ov-base-h: 28px; /* control-row height (.sbase) */
   --ov-cap-max-h: 64px; /* max height of the scrolling live-text region */
+  /* How far the compact pill travels when it slides in/out. The native overlay
+     window (overlay.rs) reserves this much slack past the card, and the screen-
+     edge offset there is reduced to match, so the resting position is unchanged
+     while the card still has somewhere to travel from. */
+  --ov-travel: 12px;
 }
 /* No dark-mode override: the overlay palette above is fixed in both themes. */
 
@@ -51,15 +56,36 @@
 .ov-stage.top {
   align-items: flex-start; /* top placement: flush to the top edge */
 }
-
-/* Compact pill: fade the whole container in/out (the pill itself never pops or
-   morphs). */
-.ov-fade {
-  opacity: 0;
-  transition: opacity 200ms ease-out;
+/* Reserve the slide distance between the card and the screen-edge side, so the
+   pill has room to travel from without being clipped by the native window. */
+.ov-stage {
+  padding-bottom: var(--ov-travel);
 }
-.ov-fade.show {
+.ov-stage.top {
+  padding-bottom: 0;
+  padding-top: var(--ov-travel);
+}
+
+/* Compact pill: rises into place from the screen edge and sinks back out. The
+   long, heavily-eased transform with a shorter opacity fade is what makes the
+   entrance read as a soft glide rather than a pop. */
+.ov-fade .scard.compact {
+  opacity: 0;
+  transform: translateY(var(--ov-travel));
+  transition:
+    transform 380ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 260ms ease-out;
+}
+.ov-fade.show .scard.compact {
   opacity: 1;
+  transform: translateY(0);
+}
+/* Top placement slides down from above instead of up from below. */
+.ov-stage.top.ov-fade .scard.compact {
+  transform: translateY(calc(-1 * var(--ov-travel)));
+}
+.ov-stage.top.ov-fade.show .scard.compact {
+  transform: translateY(0);
 }
 
 /* Top placement, Live panel: stack the control pill above the text region so the
@@ -98,7 +124,7 @@
 /* Shared base card. Flat: theme surface + hairline border, no shadow or blur. */
 .scard {
   width: var(--ov-pill-w);
-  border-radius: 13px; /* == half of --ov-base-h: a true pill at rest */
+  border-radius: 14px; /* == half of --ov-base-h: a true pill at rest */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -154,6 +180,14 @@
    instead of growing to fit a label. */
 .scard.compact.cworking {
   width: var(--ov-rest-w);
+}
+
+/* Compact rows hold a single centred element (waveform or spinner), so they drop
+   the pill/panel 3-zone grid entirely. */
+.scard.compact .sbase {
+  display: flex;
+  justify-content: center;
+  padding: 0;
 }
 
 /* text region — auto-height open via grid-rows trick; region fades as a whole */
@@ -275,22 +309,26 @@
   opacity: 1;
 }
 
-/* Waveform — simple reactive bars, themed; heights set inline from mic levels. */
+/* Waveform — a row of dots whose heights are set inline from mic levels. At rest
+   every dot is a circle (height == width); loudness stretches them into short
+   capsules, and because the level history shifts one step per frame the swell
+   travels across the row. */
 .swave {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding-right: 2px;
-  height: 11px;
+  gap: 4px;
+  height: 13px;
   flex: none;
 }
 .swave i {
-  width: 2.5px;
-  min-height: 2px;
-  max-height: 11px;
-  border-radius: 1.5px;
+  width: 3px;
+  min-height: 3px;
+  max-height: 13px;
+  border-radius: 999px;
   background: var(--s-accent);
-  transition: height 80ms linear;
+  /* Eased and a little longer than the ~33ms level tick, so consecutive frames
+     blend into continuous motion instead of stepping. */
+  transition: height 150ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 .sx {
   width: 16px;

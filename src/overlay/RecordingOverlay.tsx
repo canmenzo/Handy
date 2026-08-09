@@ -14,9 +14,9 @@ import { getLanguageDirection } from "@/lib/utils/rtl";
 
 type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
 
-// Number of reactive bars in the waveform (the simple, smoothed style shared by
-// every overlay form). Mic levels arrive as 16 FFT buckets; we take the first N.
-const WAVE_BARS = 9;
+// Number of reactive dots in the waveform (the simple, smoothed style shared by
+// every overlay form).
+const WAVE_BARS = 11;
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
@@ -40,7 +40,12 @@ const RecordingOverlay: React.FC = () => {
   // while overflowing, so the resting first line stays crisp flush under the pill.
   const [overflowing, setOverflowing] = useState(false);
 
-  const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
+  // One travelling wave rather than a per-dot spectrum: each frame's overall
+  // loudness is pushed in at the left and shifts right, so speech reads as a
+  // ripple crossing the pill. (Mapping each dot to its own FFT bucket made
+  // neighbouring dots jump independently, which looked like flashing code.)
+  const waveRef = useRef<number[]>(Array(WAVE_BARS).fill(0));
+  const smoothedRef = useRef(0);
   // Live-text scroll-back: the text region "sticks" to the newest line while the
   // user is at the bottom; if they scroll up to read history, auto-follow pauses
   // until they scroll back down.
@@ -83,15 +88,25 @@ const RecordingOverlay: React.FC = () => {
       });
 
       const unlistenLevel = await listen<number[]>("mic-level", (event) => {
-        const newLevels = event.payload as number[];
-        // Exponential smoothing across the 16 buckets, then take the first N
-        // bars for the shared waveform.
-        const smoothed = smoothedLevelsRef.current.map((prev, i) => {
-          const target = newLevels[i] || 0;
-          return prev * 0.7 + target * 0.3;
-        });
-        smoothedLevelsRef.current = smoothed;
-        setLevels(smoothed.slice(0, WAVE_BARS));
+        const buckets = event.payload as number[];
+        // Collapse the spectrum to one loudness value, weighted towards the
+        // lower buckets where speech actually sits.
+        let sum = 0;
+        let weight = 0;
+        for (let i = 0; i < buckets.length; i++) {
+          const w = 1 / (1 + i * 0.35);
+          sum += (buckets[i] || 0) * w;
+          weight += w;
+        }
+        const amp = weight > 0 ? sum / weight : 0;
+        // Smooth the level itself so the crest that travels down the row is a
+        // rounded swell rather than a spike.
+        smoothedRef.current = smoothedRef.current * 0.55 + amp * 0.45;
+        waveRef.current = [
+          smoothedRef.current,
+          ...waveRef.current.slice(0, WAVE_BARS - 1),
+        ];
+        setLevels(waveRef.current);
       });
 
       const unlistenStream = await events.streamTextEvent.listen((event) => {
@@ -158,7 +173,7 @@ const RecordingOverlay: React.FC = () => {
         <i
           key={i}
           style={{
-            height: `${Math.max(2, Math.min(11, 2 + Math.pow(v, 0.7) * 9))}px`,
+            height: `${Math.max(3, Math.min(13, 3 + Math.pow(v, 0.7) * 10))}px`,
           }}
         />
       ))}
@@ -209,15 +224,16 @@ const RecordingOverlay: React.FC = () => {
     </div>
   );
 
-  // Compact working row: the spinner sits in the center zone, where the waveform
-  // was, and the label is dropped — no text fits at the compact pill's width, and
-  // the spinner alone already reads as "working". The label rides along as the
-  // accessible name so screen readers still announce the state.
+  // Compact rows carry the waveform (or, once speech ends, the spinner) and
+  // nothing else — no record dot, no cancel button, no label. At this size any
+  // chrome crowds the animation, and the pill's mere presence already says
+  // "listening". The translated label rides along as the spinner's accessible
+  // name so screen readers still announce the state.
+  const compactListeningRow = <div className="sbase">{waveform}</div>;
+
   const compactWorkingRow = (label: string) => (
     <div className="sbase">
-      <div className="sbase-l" />
       <span className="sspinner" role="status" aria-label={label} />
-      <div className="sbase-r">{cancelBtn}</div>
     </div>
   );
 
@@ -290,7 +306,7 @@ const RecordingOverlay: React.FC = () => {
       <div
         className={`scard compact ${working && isVisible ? "cworking" : ""}`}
       >
-        {working ? compactWorkingRow(workLabel) : listeningRow(false, true)}
+        {working ? compactWorkingRow(workLabel) : compactListeningRow}
       </div>
     </div>
   );
