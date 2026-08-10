@@ -558,6 +558,106 @@ fn default_word_correction_threshold() -> f64 {
     0.18
 }
 
+/// Fork default: security-operations and software-development jargon that
+/// whisper mangles when it is spoken inside Turkish sentences. Whisper takes
+/// these as its decode prompt, which is capped at 224 tokens — keep the joined
+/// list under ~800 characters or the tail is silently dropped.
+fn default_custom_words() -> Vec<String> {
+    [
+        // SOC / detection stack
+        "SIEM",
+        "SOAR",
+        "EDR",
+        "XDR",
+        "MITRE ATT&CK",
+        "Sigma",
+        "YARA",
+        "Splunk",
+        "Microsoft Sentinel",
+        "CrowdStrike",
+        "Defender",
+        "Wazuh",
+        "Suricata",
+        "Sysmon",
+        "Hayabusa",
+        "Kibana",
+        "PowerShell",
+        // threat / adversary
+        "Mimikatz",
+        "Cobalt Strike",
+        "Kerberoasting",
+        "beaconing",
+        "exfiltration",
+        "lateral movement",
+        "privilege escalation",
+        "ransomware",
+        "threat hunting",
+        "IOC",
+        "TTP",
+        "CVE",
+        "CVSS",
+        "OSINT",
+        // recon / offensive tooling
+        "Nmap",
+        "Burp Suite",
+        "Metasploit",
+        "Wireshark",
+        "Shodan",
+        "VirusTotal",
+        "Proofpoint",
+        "Zscaler",
+        // identity
+        "Okta",
+        "Entra ID",
+        "Active Directory",
+        "NTLM",
+        "LDAP",
+        "DMARC",
+        // git / GitHub Actions
+        "repo",
+        "commit",
+        "push",
+        "pull request",
+        "merge",
+        "rebase",
+        "branch",
+        "GitHub Actions",
+        "workflow",
+        "runner",
+        "artifact",
+        "secrets",
+        "changelog",
+        "deploy",
+        "staging",
+        "rollback",
+        "lint",
+        "monorepo",
+        // dev stack
+        "TypeScript",
+        "Tauri",
+        "Supabase",
+        "Vercel",
+        "Next.js",
+        "pnpm",
+        "Tailwind",
+        "Rust",
+        "WSL",
+        "YAML",
+        "CI/CD",
+        "webhook",
+        // AI
+        "LLM",
+        "Anthropic",
+        "Claude Code",
+        "OpenAI",
+        "Gemini",
+        "n8n",
+    ]
+    .iter()
+    .map(|w| w.to_string())
+    .collect()
+}
+
 fn default_paste_delay_ms() -> u64 {
     60
 }
@@ -875,7 +975,7 @@ pub fn get_default_settings() -> AppSettings {
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
-        custom_words: Vec::new(),
+        custom_words: default_custom_words(),
         model_unload_timeout: ModelUnloadTimeout::default(),
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
