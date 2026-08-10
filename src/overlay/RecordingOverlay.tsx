@@ -16,7 +16,15 @@ type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
 
 // Number of reactive dots in the waveform (the simple, smoothed style shared by
 // every overlay form).
-const WAVE_BARS = 11;
+const WAVE_BARS = 9;
+
+// Mic levels land every ~33ms; the wave steps one mark every this many of them,
+// so the crest takes roughly six-tenths of a second to cross the row.
+const WAVE_STRIDE = 2;
+
+// Levels below this are treated as silence. Without it the noise floor kept the
+// marks twitching while nobody was talking.
+const WAVE_NOISE_FLOOR = 0.02;
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
@@ -45,7 +53,13 @@ const RecordingOverlay: React.FC = () => {
   // ripple crossing the pill. (Mapping each dot to its own FFT bucket made
   // neighbouring dots jump independently, which looked like flashing code.)
   const waveRef = useRef<number[]>(Array(WAVE_BARS).fill(0));
-  const smoothedRef = useRef(0);
+  // Levels arrive at ~30fps but the wave steps slower, so the frames between two
+  // steps are averaged into the value that gets pushed. Averaging (rather than
+  // filtering every frame towards a running value) is what keeps neighbouring
+  // marks distinct enough to show a travelling crest while still being smooth —
+  // a heavy per-frame filter made every mark nearly equal and the wave vanished.
+  const frameRef = useRef(0);
+  const accRef = useRef({ sum: 0, count: 0 });
   // Live-text scroll-back: the text region "sticks" to the newest line while the
   // user is at the bottom; if they scroll up to read history, auto-follow pauses
   // until they scroll back down.
@@ -89,24 +103,38 @@ const RecordingOverlay: React.FC = () => {
 
       const unlistenLevel = await listen<number[]>("mic-level", (event) => {
         const buckets = event.payload as number[];
-        // Collapse the spectrum to one loudness value, weighted towards the
-        // lower buckets where speech actually sits.
-        let sum = 0;
-        let weight = 0;
+        // Collapse the spectrum to one loudness value by taking its peak, not a
+        // mean. Speech energy sits in a handful of low buckets while the rest
+        // stay near zero, so averaging across all sixteen diluted a shout down
+        // to about 0.1 and the marks never visibly moved.
+        let amp = 0;
         for (let i = 0; i < buckets.length; i++) {
-          const w = 1 / (1 + i * 0.35);
-          sum += (buckets[i] || 0) * w;
-          weight += w;
+          const v = buckets[i] || 0;
+          if (v > amp) amp = v;
         }
-        const amp = weight > 0 ? sum / weight : 0;
-        // Smooth the level itself so the crest that travels down the row is a
-        // rounded swell rather than a spike.
-        smoothedRef.current = smoothedRef.current * 0.55 + amp * 0.45;
+        accRef.current.sum += amp < WAVE_NOISE_FLOOR ? 0 : amp;
+        accRef.current.count += 1;
+        frameRef.current += 1;
+        // Only ever touched on a step. Nothing is "live" between steps — keeping
+        // the leading mark updating every frame made it flicker at 30fps while
+        // the rest of the row sat still.
+        if (frameRef.current % WAVE_STRIDE !== 0) return;
+
+        const { sum: acc, count } = accRef.current;
+        accRef.current = { sum: 0, count: 0 };
         waveRef.current = [
-          smoothedRef.current,
+          count > 0 ? acc / count : 0,
           ...waveRef.current.slice(0, WAVE_BARS - 1),
         ];
-        setLevels(waveRef.current);
+        // Gentle spatial pass — enough that no mark differs sharply from its
+        // neighbours, light enough to leave the crest standing.
+        setLevels(
+          waveRef.current.map((v, i, row) => {
+            const prev = row[i - 1] ?? v;
+            const next = row[i + 1] ?? v;
+            return (prev + 4 * v + next) / 6;
+          }),
+        );
       });
 
       const unlistenStream = await events.streamTextEvent.listen((event) => {
@@ -167,16 +195,23 @@ const RecordingOverlay: React.FC = () => {
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   // ---- Shared building blocks (one visual language for every overlay form) ----
+  // Between a bar and a dot: each stays round-ended and keeps its width, but
+  // loudness stretches it into a short capsule — enough that a loud dot clearly
+  // grows, well short of the long dashes that made the row read as morse.
   const waveform = (
     <div className="swave">
-      {levels.map((v, i) => (
-        <i
-          key={i}
-          style={{
-            height: `${Math.max(3, Math.min(13, 3 + Math.pow(v, 0.7) * 10))}px`,
-          }}
-        />
-      ))}
+      {levels.map((v, i) => {
+        const e = Math.min(1, Math.pow(v, 0.7));
+        return (
+          <i
+            key={i}
+            style={{
+              height: `${(2 + e * 12).toFixed(2)}px`,
+              opacity: (0.8 + e * 0.2).toFixed(3),
+            }}
+          />
+        );
+      })}
     </div>
   );
 

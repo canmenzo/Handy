@@ -40,14 +40,14 @@ tauri_panel! {
 // where the card sits — only OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET do. Keep
 // these in sync with the CSS card geometry.
 //
-// Compact overlay (Minimal / transcribing / processing): a 28h pill that holds
-// 104 (--ov-rest-w) in both the recording and the spinner-only working state.
-// The height also covers --ov-travel (12), the slide-in distance the CSS stage
+// Compact overlay (Minimal / transcribing / processing): a 24h pill that holds
+// 88 (--ov-rest-w) in both the recording and the spinner-only working state.
+// The height also covers --ov-travel (10), the slide-in distance the CSS stage
 // reserves past the card, so the pill isn't clipped mid-animation.
-const OVERLAY_WIDTH: f64 = 140.0;
-const OVERLAY_HEIGHT: f64 = 52.0;
+const OVERLAY_WIDTH: f64 = 120.0;
+const OVERLAY_HEIGHT: f64 = 46.0;
 
-// Actual is 394x118, plus --ov-travel (12) of stage padding and a little extra
+// Actual is 394x118, plus --ov-travel (10) of stage padding and a little extra
 const OVERLAY_STREAM_WIDTH: f64 = 400.0;
 const OVERLAY_STREAM_HEIGHT: f64 = 136.0;
 
@@ -69,13 +69,13 @@ const OVERLAY_TOP_OFFSET: f64 = 46.0;
 const OVERLAY_TOP_OFFSET: f64 = 4.0;
 
 #[cfg(target_os = "macos")]
-const OVERLAY_BOTTOM_OFFSET: f64 = 3.0;
+const OVERLAY_BOTTOM_OFFSET: f64 = 5.0;
 
-// Reduced by --ov-travel (12): the CSS stage now pads the card that far off the
+// Reduced by --ov-travel (10): the CSS stage now pads the card that far off the
 // window's bottom edge to give the slide-in room, so the offset here shrinks by
 // the same amount to leave the pill's resting position on screen unchanged.
 #[cfg(any(target_os = "windows", target_os = "linux"))]
-const OVERLAY_BOTTOM_OFFSET: f64 = 28.0;
+const OVERLAY_BOTTOM_OFFSET: f64 = 30.0;
 
 #[cfg(target_os = "linux")]
 fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow) {

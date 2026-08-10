@@ -21,18 +21,18 @@
      the card's max footprint (--ov-work-w for compact, --ov-open-w for Live),
      since the card is anchored flush to the screen edge in CSS. Keep overlay.rs
      in sync when these change. */
-  --ov-rest-w: 104px; /* resting compact pill (minimal, recording) -- hugs the
-                         waveform; the working state is a bare spinner */
-  --ov-pill-w: 110px; /* base width / Live pill before it opens or collapses */
+  --ov-rest-w: 88px; /* resting compact pill (minimal, recording) -- hugs the
+                        waveform; the working state is a bare spinner */
+  --ov-pill-w: 94px; /* base width / Live pill before it opens or collapses */
   --ov-work-w: 108px; /* working pill (transcribing / polishing) */
   --ov-open-w: 392px; /* Live panel, expanded */
-  --ov-base-h: 28px; /* control-row height (.sbase) */
+  --ov-base-h: 24px; /* control-row height (.sbase) */
   --ov-cap-max-h: 64px; /* max height of the scrolling live-text region */
   /* How far the compact pill travels when it slides in/out. The native overlay
      window (overlay.rs) reserves this much slack past the card, and the screen-
      edge offset there is reduced to match, so the resting position is unchanged
      while the card still has somewhere to travel from. */
-  --ov-travel: 12px;
+  --ov-travel: 10px;
 }
 /* No dark-mode override: the overlay palette above is fixed in both themes. */
 
@@ -124,7 +124,7 @@
 /* Shared base card. Flat: theme surface + hairline border, no shadow or blur. */
 .scard {
   width: var(--ov-pill-w);
-  border-radius: 14px; /* == half of --ov-base-h: a true pill at rest */
+  border-radius: 12px; /* == half of --ov-base-h: a true pill at rest */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -309,26 +309,29 @@
   opacity: 1;
 }
 
-/* Waveform — a row of dots whose heights are set inline from mic levels. At rest
-   every dot is a circle (height == width); loudness stretches them into short
-   capsules, and because the level history shifts one step per frame the swell
-   travels across the row. */
+/* Waveform — a row of round-ended marks, circles at rest and short capsules when
+   loud (heights set inline from mic levels). Kept few and widely spaced so the
+   row breathes inside the pill. Because the level history steps along the row,
+   the swell travels left to right. */
 .swave {
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 13px;
+  height: 14px;
   flex: none;
 }
 .swave i {
-  width: 3px;
-  min-height: 3px;
-  max-height: 13px;
+  width: 2px;
+  min-height: 2px;
+  max-height: 14px;
   border-radius: 999px;
   background: var(--s-accent);
-  /* Eased and a little longer than the ~33ms level tick, so consecutive frames
-     blend into continuous motion instead of stepping. */
-  transition: height 150ms cubic-bezier(0.33, 1, 0.68, 1);
+  flex: none;
+  /* Longer than the interval between wave steps, so each mark is still easing
+     toward its last target when the next arrives and the motion never snaps. */
+  transition:
+    height 260ms cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 260ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 .sx {
   width: 16px;
@@ -366,8 +369,8 @@
 
 /* working state (transcribing / polishing) — spinner + label */
 .sspinner {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   border: 1.5px solid var(--s-hair);
   border-top-color: var(--s-spinner);

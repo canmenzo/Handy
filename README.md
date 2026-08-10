@@ -1,3 +1,77 @@
+> ## About this fork
+>
+> A personal fork of [cjpais/Handy](https://github.com/cjpais/Handy), kept close to
+> upstream apart from the recording overlay, which was reworked to be smaller and
+> quieter on screen. Everything below this box is upstream's own README.
+>
+> ### What's different
+>
+> **A much smaller pill.** The compact overlay went from 172×40 to 88×24, with the
+> native overlay window resized to match. The record dot and the cancel button were
+> dropped from it — at this size they crowded the animation, and the pill's presence
+> already says "listening". The Live (streaming) panel is untouched and keeps both.
+>
+> **Fixed black, not themed.** The overlay used to derive its surface from the app
+> theme, which made it light-on-light over bright windows. It's now `#000` in both
+> themes, with white marks and a purple processing spinner. The two places that
+> reached for `--color-text` directly are pinned to light values so they can't go
+> dark-on-dark.
+>
+> **A travelling waveform.** Upstream binds each mark to its own FFT bucket, so
+> neighbours move independently and the row reads as flashing code. Here the
+> spectrum is collapsed to a single loudness value — its *peak*, since speech
+> energy sits in a handful of low buckets and averaging across all sixteen dilutes
+> a shout to nothing — which is pushed in at the left and shifted right one mark
+> every few frames. Frames between steps are averaged rather than filtered per
+> frame: filtering hard enough to stop neighbours alternating also made them all
+> equal, which erased the crest entirely. Marks are circles at rest and stretch
+> into short bars, growing from the centre out.
+>
+> **It slides in.** The pill rises into place and sinks back out, the transform
+> running longer than the opacity fade so the entrance glides rather than pops.
+> `--ov-travel` reserves the distance; the native window covers it and the
+> screen-edge offsets drop by the same amount, so the resting position is unchanged.
+>
+> **The stop sound marks arrival.** Upstream plays it on key release. Here it
+> trails a successful paste, so it means "your transcript is in" rather than
+> "recording ended".
+>
+> ### Custom feedback sounds
+>
+> Upstream already reads `custom_start.wav` / `custom_stop.wav` from the app data
+> dir when Sound Theme is set to Custom — no code change needed, and the picker only
+> offers Custom once both files exist (checked at startup, so add them before
+> launching). On Windows that directory is `%APPDATA%\com.pais.handy\`. The setting
+> lives in the debug panel (`Ctrl+Shift+D`), not in normal settings.
+>
+> `scripts/gen_custom_sounds.py` synthesises a soft pair to start from.
+>
+> ### Building on Windows
+>
+> Beyond upstream's [BUILD.md](BUILD.md), a clean machine needs all four of these or
+> the build fails at a different stage each time:
+>
+> ```powershell
+> winget install Rustlang.Rustup Oven-sh.Bun
+> winget install Microsoft.VisualStudio.2022.BuildTools --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --includeRecommended"
+> winget install KhronosGroup.VulkanSDK
+> ```
+>
+> The Build Tools install needs an elevated, interactive shell — run from an
+> automated one it exits `1602` (cancelled) with nothing installed. CMake ships
+> inside Build Tools but isn't on `PATH`; either add
+> `…\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin` (plus the
+> sibling `Ninja` folder) or `winget install Kitware.CMake`. The Vulkan **runtime**
+> that ships with the released app is not enough — `ggml-vulkan` needs the SDK's
+> headers and `glslc`.
+>
+> While iterating: CSS changes hot-reload into the overlay, but changes to the
+> overlay's TSX do not reliably reach that hidden webview — restart the app rather
+> than trusting HMR. And kill any stale `handy.exe` and the dev server on port 1420
+> before rebuilding, or the build fails on a locked file or a busy port.
+>
+> Upstream's MIT licence applies unchanged; see [LICENSE](LICENSE).
+
 # Handy
 
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/WVBeWsNXK4)
