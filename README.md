@@ -1,76 +1,121 @@
-> ## About this fork
->
-> A personal fork of [cjpais/Handy](https://github.com/cjpais/Handy), kept close to
-> upstream apart from the recording overlay, which was reworked to be smaller and
-> quieter on screen. Everything below this box is upstream's own README.
->
-> ### What's different
->
-> **A much smaller pill.** The compact overlay went from 172×40 to 88×24, with the
-> native overlay window resized to match. The record dot and the cancel button were
-> dropped from it — at this size they crowded the animation, and the pill's presence
-> already says "listening". The Live (streaming) panel is untouched and keeps both.
->
-> **Fixed black, not themed.** The overlay used to derive its surface from the app
-> theme, which made it light-on-light over bright windows. It's now `#000` in both
-> themes, with white marks and a purple processing spinner. The two places that
-> reached for `--color-text` directly are pinned to light values so they can't go
-> dark-on-dark.
->
-> **A travelling waveform.** Upstream binds each mark to its own FFT bucket, so
-> neighbours move independently and the row reads as flashing code. Here the
-> spectrum is collapsed to a single loudness value — its *peak*, since speech
-> energy sits in a handful of low buckets and averaging across all sixteen dilutes
-> a shout to nothing — which is pushed in at the left and shifted right one mark
-> every few frames. Frames between steps are averaged rather than filtered per
-> frame: filtering hard enough to stop neighbours alternating also made them all
-> equal, which erased the crest entirely. Marks are circles at rest and stretch
-> into short bars, growing from the centre out.
->
-> **It slides in.** The pill rises into place and sinks back out, the transform
-> running longer than the opacity fade so the entrance glides rather than pops.
-> `--ov-travel` reserves the distance; the native window covers it and the
-> screen-edge offsets drop by the same amount, so the resting position is unchanged.
->
-> **The stop sound marks arrival.** Upstream plays it on key release. Here it
-> trails a successful paste, so it means "your transcript is in" rather than
-> "recording ended".
->
-> ### Custom feedback sounds
->
-> Upstream already reads `custom_start.wav` / `custom_stop.wav` from the app data
-> dir when Sound Theme is set to Custom — no code change needed, and the picker only
-> offers Custom once both files exist (checked at startup, so add them before
-> launching). On Windows that directory is `%APPDATA%\com.pais.handy\`. The setting
-> lives in the debug panel (`Ctrl+Shift+D`), not in normal settings.
->
-> `scripts/gen_custom_sounds.py` synthesises a soft pair to start from.
->
-> ### Building on Windows
->
-> Beyond upstream's [BUILD.md](BUILD.md), a clean machine needs all four of these or
-> the build fails at a different stage each time:
->
-> ```powershell
-> winget install Rustlang.Rustup Oven-sh.Bun
-> winget install Microsoft.VisualStudio.2022.BuildTools --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --includeRecommended"
-> winget install KhronosGroup.VulkanSDK
-> ```
->
-> The Build Tools install needs an elevated, interactive shell — run from an
-> automated one it exits `1602` (cancelled) with nothing installed. CMake ships
-> inside Build Tools but isn't on `PATH`; either add
-> `…\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin` (plus the
-> sibling `Ninja` folder) or `winget install Kitware.CMake`. The Vulkan **runtime**
-> that ships with the released app is not enough — `ggml-vulkan` needs the SDK's
-> headers and `glslc`.
->
-> While iterating: CSS changes hot-reload into the overlay, but changes to the
-> overlay's TSX do not reliably reach that hidden webview — restart the app rather
-> than trusting HMR. And kill any stale `handy.exe` and the dev server on port 1420
-> before rebuilding, or the build fails on a locked file or a busy port.
->
-> Upstream's MIT licence applies unchanged; see [LICENSE](LICENSE).
+# Handy — menzo fork
+
+🇹🇷 [Türkçe](#türkçe) &nbsp;|&nbsp; 🇬🇧 [English](#english)
+
+A fork of [cjpais/Handy](https://github.com/cjpais/Handy) with a reworked recording
+overlay. Upstream's own README follows [below](#handy).
+
+## English
+
+**What's different**
+
+- **Smaller pill** — 88×24 instead of 172×40, native window resized to match. The
+  record dot and cancel button are gone; they crowded the animation at this size.
+- **Always black** — `#000` in both themes instead of following the app theme,
+  which used to go light-on-light over bright windows.
+- **Travelling waveform** — upstream binds each mark to its own FFT bucket, so
+  neighbours flash independently. Here the spectrum is collapsed to its peak and
+  shifted along the row, so a swell crosses the pill. Marks are dots at rest and
+  stretch into bars from the centre out.
+- **Slides in and out** instead of appearing on the spot.
+- **Stop sound** plays once the text has been pasted, not on key release.
+
+**Custom sounds** — drop `custom_start.wav` and `custom_stop.wav` into the app data
+dir (`%APPDATA%\com.pais.handy\` on Windows) *before* launching, then pick Custom
+under Sound Theme in the debug panel (`Ctrl+Shift+D`). The option stays hidden until
+both files exist, and it is not in normal settings.
+`scripts/gen_custom_sounds.py` generates a pair.
+
+**Building on Windows** — there is no prebuilt download; see
+[AI-assisted setup](#ai-assisted-setup--yapay-zeka-ile-kurulum) or [BUILD.md](BUILD.md).
+
+## Türkçe
+
+Bu, [cjpais/Handy](https://github.com/cjpais/Handy)'nin kayıt göstergesi yeniden
+tasarlanmış bir fork'u. Handy tamamen çevrimdışı çalışan bir konuşma-yazıya
+uygulaması: kısayola bas, konuş, yazı imlecin olduğu yere düşsün. Ses bilgisayarından
+çıkmıyor.
+
+**Türkçe dikte için model seçimi — önemli**
+
+Modeli **Whisper Large v3 Turbo** olarak ayarla. Handy varsayılan olarak Parakeet'i
+öneriyor ama Parakeet 25 Avrupa dilini kapsıyor ve **Türkçe bunların arasında yok** —
+Türkçe konuşursan anlamsız çıktı alırsın. Whisper ailesi Türkçeyi destekliyor,
+Large v3 Turbo da bunların en iyi dengesi.
+
+Ayrıca faydalı olanlar:
+
+- **Dili Türkçe'ye sabitle.** Otomatik algılamada Türkçe-İngilizce karışık
+  konuşurken model cümle ortasında dil değiştirebiliyor.
+- **Özel kelimeler (Custom Words).** Sürekli kullandığın teknik terimleri ekle
+  (README, commit, repo…). Transkripsiyon sonrası bulanık eşleştirmeyle düzeltiyor;
+  Whisper'ın Türkçe konuşma içindeki İngilizce terimleri kaçırma sorununu büyük
+  ölçüde kapatıyor.
+- **Unload Model → Never.** VRAM'in müsaitse modeli bellekte tut; aradan zaman
+  geçince ilk dikte yavaş başlamaz. Boşta CPU ya da güç harcamıyor.
+
+**Bu fork'ta ne değişti**
+
+- **Daha küçük gösterge** — 172×40 yerine 88×24. Kayıt noktası ve çarpı kaldırıldı.
+- **Her temada saf siyah** — eskiden uygulama temasını takip ediyor, aydınlık
+  pencerelerin üstünde beyaz kalıyordu.
+- **Soldan sağa akan dalga** — upstream'de her nokta ayrı bir frekans bandına bağlı
+  olduğu için komşular bağımsız zıplıyordu. Artık tek bir ses seviyesi satır boyunca
+  kaydırılıyor; noktalar dinlenirken daire, konuşurken merkezden çubuğa uzuyor.
+- **Süzülerek açılıp kapanıyor.**
+- **Bitiş sesi** tuşu bıraktığında değil, yazı yapıştıktan sonra çalıyor.
+
+**Özel sesler** — `custom_start.wav` ve `custom_stop.wav` dosyalarını uygulamayı
+**açmadan önce** `%APPDATA%\com.pais.handy\` klasörüne koy, sonra debug panelinden
+(`Ctrl+Shift+D`) Sound Theme → Custom seç. Seçenek, iki dosya da yoksa listede
+görünmüyor ve normal ayarlarda değil.
+
+## AI-assisted setup / Yapay zeka ile kurulum
+
+Hazır indirilebilir sürüm yok; kendin derlemen gerekiyor. Windows'ta bu, atlanınca
+her biri ayrı bir hata veren dört ayrı kurulum demek. Elle uğraşmak istemezsen bir
+kodlama asistanına (Claude Code, Cursor…) bu depoyu ve aşağıdaki prompt'u ver.
+
+There is no prebuilt download — you build it yourself. Point a coding agent at this
+repo with the prompt below; it encodes the ordering and the traps.
+
+````text
+Set up this repo (a fork of cjpais/Handy, a local speech-to-text app) so I can run
+it. Work through it yourself; only stop if you need a decision from me.
+
+1. Windows needs all four — Rust (winget install Rustlang.Rustup), Bun
+   (Oven-sh.Bun), MSVC Build Tools, and the Vulkan SDK
+   (KhronosGroup.VulkanSDK — the runtime alone is not enough, ggml-vulkan needs
+   its headers and glslc). Build Tools:
+   winget install Microsoft.VisualStudio.2022.BuildTools --override "--quiet --wait
+   --norestart --add Microsoft.VisualStudio.Workload.VCTools --add
+   Microsoft.VisualStudio.Component.Windows11SDK.22621 --includeRecommended"
+   It needs elevation: from a non-interactive shell it exits 1602 and installs
+   nothing, so hand it to me and wait if you can't get a UAC prompt.
+   On macOS/Linux follow BUILD.md instead.
+
+2. CMake ships inside Build Tools but is not on PATH — add
+   ...\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMakein and the
+   sibling Ninja folder, or winget install Kitware.CMake. Set VULKAN_SDK explicitly
+   if your shell started before the SDK was installed.
+
+3. bun install, then:
+   curl -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
+
+4. bun run tauri dev. Before each rebuild kill any running handy.exe and whatever
+   listens on port 1420, or it fails on a locked file or a busy port. The first
+   build compiles whisper.cpp and is slow; later ones are fast.
+
+5. Then tell me how to finish in the app: pick a model (I speak Turkish, so I need
+   Whisper Large v3 Turbo — Parakeet has no Turkish), set Unload Model to Never,
+   and set up custom sounds if I have wav files.
+
+Report what you installed and anything you couldn't finish.
+````
+
+Upstream's MIT licence applies unchanged; see [LICENSE](LICENSE).
+
+---
 
 # Handy
 
