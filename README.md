@@ -1,4 +1,4 @@
-# Handy — menzo fork
+# Handy
 
 🇹🇷 [Türkçe](#türkçe) &nbsp;|&nbsp; 🇬🇧 [English](#english)
 
@@ -26,8 +26,11 @@ under Sound Theme in the debug panel (`Ctrl+Shift+D`). The option stays hidden u
 both files exist, and it is not in normal settings.
 `scripts/gen_custom_sounds.py` generates a pair.
 
-**Install** — [Download](#download--i̇ndirme) the Windows build, or build from source
-with upstream's [BUILD.md](BUILD.md).
+**Install**
+
+Grab the Windows installer from [Releases](https://github.com/canmenzo/Handy/releases).
+It is **unsigned**, so SmartScreen warns on first run — choose *More info → Run anyway*.
+Building from source: see upstream's [BUILD.md](BUILD.md).
 
 ## Türkçe
 
@@ -70,12 +73,7 @@ Ayrıca faydalı olanlar:
 (`Ctrl+Shift+D`) Sound Theme → Custom seç. Seçenek, iki dosya da yoksa listede
 görünmüyor ve normal ayarlarda değil.
 
-## Download / İndirme
-
-Grab the Windows installer from [Releases](https://github.com/canmenzo/Handy/releases).
-It is **unsigned**, so SmartScreen warns on first run — choose *More info → Run anyway*.
-Building from source: see upstream's [BUILD.md](BUILD.md).
-
+**Kurulum**
 Windows kurulum dosyası [Releases](https://github.com/canmenzo/Handy/releases)
 sayfasında. **İmzasız** olduğu için Windows ilk açılışta uyarı verir; *Daha fazla
 bilgi → Yine de çalıştır* de. Kaynaktan derlemek için [BUILD.md](BUILD.md).
