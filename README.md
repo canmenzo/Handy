@@ -21,7 +21,7 @@ overlay. [Download](#download--i̇ndirme) · [upstream docs](https://github.com/
 - **Stop sound** plays once the text has been pasted, not on key release.
 
 **Custom sounds** — drop `custom_start.wav` and `custom_stop.wav` into the app data
-dir (`%APPDATA%\com.pais.handy\` on Windows) *before* launching, then pick Custom
+dir (`%APPDATA%\com.pais.handy\` on Windows) _before_ launching, then pick Custom
 under Sound Theme in the debug panel (`Ctrl+Shift+D`). The option stays hidden until
 both files exist, and it is not in normal settings.
 `scripts/gen_custom_sounds.py` generates a pair.
@@ -29,7 +29,7 @@ both files exist, and it is not in normal settings.
 **Install**
 
 Grab the Windows installer from [Releases](https://github.com/canmenzo/Handy/releases).
-It is **unsigned**, so SmartScreen warns on first run — choose *More info → Run anyway*.
+It is **unsigned**, so SmartScreen warns on first run — choose _More info → Run anyway_.
 Building from source: see upstream's [BUILD.md](BUILD.md).
 
 ## Türkçe
@@ -75,8 +75,8 @@ görünmüyor ve normal ayarlarda değil.
 
 **Kurulum**
 Windows kurulum dosyası [Releases](https://github.com/canmenzo/Handy/releases)
-sayfasında. **İmzasız** olduğu için Windows ilk açılışta uyarı verir; *Daha fazla
-bilgi → Yine de çalıştır* de. Kaynaktan derlemek için [BUILD.md](BUILD.md).
+sayfasında. **İmzasız** olduğu için Windows ilk açılışta uyarı verir; _Daha fazla
+bilgi → Yine de çalıştır_ de. Kaynaktan derlemek için [BUILD.md](BUILD.md).
 
 ---
 
