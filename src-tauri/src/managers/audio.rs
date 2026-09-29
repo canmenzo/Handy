@@ -435,9 +435,15 @@ impl AudioRecordingManager {
             cached_device: Arc::new(Mutex::new(None)),
         };
 
-        // Always-on?  Open immediately.
+        // Always-on?  Open immediately. A missing or unopenable input device
+        // (e.g. the selected Bluetooth headset is disconnected on a machine
+        // with no built-in mic) must not abort startup: try_start_recording
+        // retries the open on every recording, so the stream comes up once a
+        // device is available.
         if matches!(mode, MicrophoneMode::AlwaysOn) {
-            manager.start_microphone_stream()?;
+            if let Err(e) = manager.start_microphone_stream() {
+                error!("Always-on microphone unavailable at startup, will retry on record: {e}");
+            }
         }
 
         Ok(manager)
