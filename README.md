@@ -5,6 +5,10 @@
 A fork of [cjpais/Handy](https://github.com/cjpais/Handy) with a reworked recording
 overlay. [Download](#download--i̇ndirme) · [upstream docs](https://github.com/cjpais/Handy#readme)
 
+| Recording | Transcribing | Live |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/overlay-recording.png" width="260" alt="Recording: small black pill with a travelling waveform"> | <img src="docs/screenshots/overlay-transcribing.png" width="260" alt="Transcribing: the pill shows a purple spinner"> | <img src="docs/screenshots/overlay-live.png" width="460" alt="Live: the pill opens into a panel with streaming text, waveform, timer and cancel"> |
+
 ## English
 
 **What's different**
