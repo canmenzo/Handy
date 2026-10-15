@@ -833,7 +833,7 @@ impl ShortcutAction for TranscribeAction {
                                         return;
                                     }
 
-                                    match utils::paste(final_text, ah_clone.clone()) {
+                                    match utils::paste(final_text.clone(), ah_clone.clone()) {
                                         Ok(()) => {
                                             debug!(
                                                 "Text pasted successfully in {:?}",
@@ -848,6 +848,15 @@ impl ShortcutAction for TranscribeAction {
                                         }
                                         Err(e) => {
                                             error!("Failed to paste transcription: {}", e);
+                                            // Key injection can be blocked outright (e.g. UIPI
+                                            // while an elevated process holds input), so leave
+                                            // the transcript on the clipboard for a manual paste.
+                                            if let Err(e) = utils::write_text_to_clipboard(
+                                                &ah_clone,
+                                                &final_text,
+                                            ) {
+                                                error!("Failed to copy transcript: {e}");
+                                            }
                                             let _ = ah_clone.emit("paste-error", ());
                                         }
                                     }

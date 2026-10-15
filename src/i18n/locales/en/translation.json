@@ -684,7 +684,7 @@
     "modelLoadFailed": "Failed to load model: {{model}}",
     "modelLoadFailedUnknown": "unknown model",
     "pasteFailedTitle": "Failed to Paste Text",
-    "pasteFailed": "Text could not be pasted into the active application.",
+    "pasteFailed": "The transcript was copied to your clipboard. Press Ctrl+V to paste it.",
     "transcriptionFailedTitle": "Transcription Failed"
   },
   "appLanguage": {
