@@ -31,9 +31,11 @@ jobs:
       - name: Resolve tag
         id: tag
         shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          if [ -n "${{ inputs.tag }}" ]; then
-            TAG="${{ inputs.tag }}"
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
           else
             VERSION=$(grep -o '"version": "[^"]*"' src-tauri/tauri.conf.json | cut -d'"' -f4)
             # Suffixed so it can't collide with the upstream tag of the same version.
@@ -45,13 +47,15 @@ jobs:
       - name: Create draft release
         id: create-release
         uses: actions/github-script@v9
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
         with:
           script: |
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: `${{ steps.tag.outputs.tag }}`,
-              name: `${{ steps.tag.outputs.tag }} (Windows, unsigned)`,
+              tag_name: process.env.TAG,
+              name: `${process.env.TAG} (Windows, unsigned)`,
               draft: true,
               prerelease: false,
               generate_release_notes: true,
