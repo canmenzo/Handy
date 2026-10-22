@@ -480,7 +480,7 @@
       "updateChecks": {
         "label": "Check for Updates",
         "description": "Automatically check for new versions of Handy",
-        "lockedDescription": "Disabled by system configuration (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Disabled in this fork build (no signed update feed)"
       },
       "whatsNewPreview": {
         "title": "Preview What's New",
